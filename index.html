@@ -176,7 +176,8 @@
 
     <!-- Script de Lógica Full-Stack -->
     <script>
-       const API_URL = 'http://localhost:3000/api';
+       // Detecta si hay una URL guardada o usa localhost por defecto
+const API_URL = localStorage.getItem('fumican_api_url') || 'http://localhost:3000/api';
         let modoTecnicoActivo = false;
 
         function cambiarSeccion(seccion) {
