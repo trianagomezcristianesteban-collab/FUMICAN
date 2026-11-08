@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fumican - Sistema de Control de Fumigación y Plagas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="h-full flex flex-col">
+
+<!-- Header / Navbar -->
+<header class="bg-emerald-800 text-white shadow-md">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <img src="img/logo.jpg" alt="Logo FUMICAN" class="h-8 w-auto rounded-lg">
+      <span class="text-xl font-bold tracking-wide">FUMICAN
+        <span id="rol-badge" class="text-xs bg-emerald-700 px-2 py-0.5 rounded text-emerald-200">Panel Admin</span>
+      </span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <button onclick="alternarModoTecnico()" class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded text-xs font-semibold transition border border-emerald-600 shadow">
+        <i class="fa-solid fa-user-gear mr-1"></i> <span id="txt-modo">Cambiar a Modo Técnico</span>
+      </button>
+      <span id="estado-servidor" class="text-sm bg-emerald-900 px-3 py-1 rounded-full text-emerald-200">
+        <i class="fa-solid fa-circle text-slate-400 text-xs mr-1"></i> Verificando servidor...
+      </span>
+    </div>
+  </div>
+</header>
+
+<!-- Aviso de errores -->
+<div id="aviso" class="hidden fixed top-16 right-4 z-50 max-w-sm bg-red-600 text-white text-sm px-4 py-3 rounded-lg shadow-lg"></div>
+
+<div class="flex-1 flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col">
+    <div class="p-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Módulos Principales</div>
+    <nav id="menu-admin" class="flex-1 px-2 space-y-1">
+      <button onclick="cambiarSeccion('clientes')" id="btn-clientes" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg bg-emerald-700 text-white transition"><i class="fa-solid fa-users mr-3"></i> Clientes</button>
+      <button onclick="cambiarSeccion('ordenes')" id="btn-ordenes" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-slate-800 hover:text-white transition"><i class="fa-solid fa-clipboard-list mr-3"></i> Órdenes y Servicios</button>
+      <button onclick="cambiarSeccion('insumos')" id="btn-insumos" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-slate-800 hover:text-white transition"><i class="fa-solid fa-flask mr-3"></i> Insumos Químicos</button>
+      <button onclick="cambiarSeccion('tecnicos')" id="btn-tecnicos" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-slate-800 hover:text-white transition"><i class="fa-solid fa-user-shield mr-3"></i> Técnicos</button>
+    </nav>
+    <nav id="menu-tecnico" class="flex-1 px-2 space-y-1 hidden">
+      <button onclick="cambiarSeccion('mis-rutas')" id="btn-mis-rutas" class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg bg-blue-700 text-white transition"><i class="fa-solid fa-map-location-dot mr-3"></i> Mis Órdenes y Rutas</button>
+    </nav>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-6 bg-slate-100 space-y-6">
+
+    <!-- 1. CLIENTES -->
+    <section id="seccion-clientes" class="space-y-6">
+      <h1 class="text-2xl font-bold text-slate-800">Gestión de Clientes</h1>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-user-plus mr-2 text-emerald-600"></i> Registrar Nuevo Cliente</h2>
+        <form id="form-cliente" onsubmit="guardarCliente(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input type="text" id="cli-nombre" placeholder="Nombre del Cliente" required class="p-2 border rounded text-sm">
+          <input type="text" id="cli-telefono" placeholder="Teléfono" class="p-2 border rounded text-sm">
+          <input type="text" id="cli-direccion" placeholder="Dirección" class="p-2 border rounded text-sm">
+          <input type="email" id="cli-email" placeholder="Correo electrónico" class="p-2 border rounded text-sm">
+          <button type="submit" class="md:col-span-4 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold shadow">Guardar Cliente</button>
+        </form>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase"><th class="p-4">ID</th><th class="p-4">Nombre</th><th class="p-4">Teléfono</th><th class="p-4">Dirección</th><th class="p-4">Correo</th></tr></thead>
+          <tbody id="tabla-clientes" class="divide-y text-sm text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2. ÓRDENES -->
+    <section id="seccion-ordenes" class="space-y-6 hidden">
+      <h1 class="text-2xl font-bold text-slate-800">Órdenes de Servicio y Asignación</h1>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-calendar-plus mr-2 text-emerald-600"></i> Asignar Servicio a Técnico</h2>
+        <form id="form-orden" onsubmit="guardarOrden(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <select id="ord-cliente" required class="p-2 border rounded text-sm bg-white"><option value="">Seleccione Cliente...</option></select>
+          <select id="ord-tecnico" required class="p-2 border rounded text-sm bg-white"><option value="">Seleccione Técnico...</option></select>
+          <input type="datetime-local" id="ord-fecha" required class="p-2 border rounded text-sm">
+          <select id="ord-insumo" class="p-2 border rounded text-sm bg-white"><option value="">Insumo (opcional)...</option></select>
+          <input type="text" id="ord-obs" placeholder="Observaciones / Zona" class="md:col-span-4 p-2 border rounded text-sm">
+          <button type="submit" class="md:col-span-4 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold shadow">Asignar Orden de Servicio</button>
+        </form>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase"><th class="p-4">ID</th><th class="p-4">Cliente</th><th class="p-4">Técnico</th><th class="p-4">Fecha</th><th class="p-4">Estado</th><th class="p-4">Ruta GPS</th></tr></thead>
+          <tbody id="tabla-ordenes" class="divide-y text-sm text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. INSUMOS -->
+    <section id="seccion-insumos" class="space-y-6 hidden">
+      <h1 class="text-2xl font-bold text-slate-800">Control de Insumos Químicos</h1>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-bottle-droplet mr-2 text-emerald-600"></i> Registrar Insumo Químico</h2>
+        <form id="form-insumo" onsubmit="guardarInsumo(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input type="text" id="ins-nombre" placeholder="Nombre (Ej: Deltametrina)" required class="p-2 border rounded text-sm">
+          <input type="text" id="ins-invima" placeholder="Registro INVIMA" class="p-2 border rounded text-sm">
+          <input type="number" id="ins-stock" placeholder="Stock Actual" required min="0" class="p-2 border rounded text-sm">
+          <input type="text" id="ins-unidad" placeholder="Unidad (Litros/Kilos)" required class="p-2 border rounded text-sm">
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold shadow">Guardar Insumo</button>
+        </form>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase"><th class="p-4">ID</th><th class="p-4">Producto</th><th class="p-4">INVIMA</th><th class="p-4">Stock</th><th class="p-4">Unidad</th></tr></thead>
+          <tbody id="tabla-insumos" class="divide-y text-sm text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. TÉCNICOS -->
+    <section id="seccion-tecnicos" class="space-y-6 hidden">
+      <h1 class="text-2xl font-bold text-slate-800">Gestión de Personal Técnico</h1>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-user-plus mr-2 text-emerald-600"></i> Dar de Alta Nuevo Técnico</h2>
+        <form id="form-tecnico" onsubmit="guardarTecnico(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input type="text" id="tec-nombre" placeholder="Nombre Completo" required class="p-2 border rounded text-sm">
+          <input type="email" id="tec-email" placeholder="Correo Electrónico" required class="p-2 border rounded text-sm">
+          <input type="text" id="tec-vehiculo" placeholder="Vehículo (opcional)" class="p-2 border rounded text-sm">
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold shadow">Registrar Técnico</button>
+        </form>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase"><th class="p-4">ID</th><th class="p-4">Nombre</th><th class="p-4">Correo</th><th class="p-4">Vehículo</th><th class="p-4">Rol</th></tr></thead>
+          <tbody id="tabla-tecnicos" class="divide-y text-sm text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. MODO TÉCNICO -->
+    <section id="seccion-mis-rutas" class="space-y-6 hidden">
+      <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-person-digging mr-2"></i> Panel de Campo - Vista Técnico</h1>
+          <p class="text-sm text-blue-700">Tus servicios asignados y rutas directas en Google Maps.</p>
+        </div>
+        <select id="sel-yo-tecnico" onchange="cargarMisRutas()" class="p-2 border rounded text-sm bg-white">
+          <option value="">¿Quién eres?...</option>
+        </select>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase"><th class="p-4">Orden</th><th class="p-4">Cliente</th><th class="p-4">Ubicación / Notas</th><th class="p-4">Fecha</th><th class="p-4">Estado</th><th class="p-4">Acciones</th></tr></thead>
+          <tbody id="tabla-mis-rutas" class="divide-y text-sm text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Configuración
+// ---------------------------------------------------------------------------
+// Para producción cambia esta URL por la de tu backend desplegado
+// (por ejemplo https://fumican-api.onrender.com/api), o guárdala sin tocar
+// el código con:  localStorage.setItem('fumican_api_url', 'https://.../api')
+const API_URL = localStorage.getItem('fumican_api_url') || 'http://localhost:3000/api';
+let modoTecnicoActivo = false;
+
+// ---------------------------------------------------------------------------
+// Utilidades
+// ---------------------------------------------------------------------------
+// Escapa texto antes de meterlo en innerHTML (evita inyección de HTML/JS).
+function esc(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+let temporizadorAviso;
+function mostrarAviso(mensaje) {
+  const aviso = document.getElementById('aviso');
+  aviso.textContent = mensaje;
+  aviso.classList.remove('hidden');
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => aviso.classList.add('hidden'), 6000);
+}
+
+// Todas las llamadas al backend pasan por aquí: revisa errores y los muestra.
+async function api(ruta, opciones = {}) {
+  try {
+    const res = await fetch(`${API_URL}${ruta}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opciones,
+      body: opciones.body ? JSON.stringify(opciones.body) : undefined,
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(datos.error || `Error ${res.status}`);
+    return datos;
+  } catch (err) {
+    mostrarAviso(err.message === 'Failed to fetch'
+      ? 'No se pudo conectar con el servidor. ¿Está encendido el backend?'
+      : err.message);
+    throw err;
+  }
+}
+
+function badgeEstado(estado) {
+  const colores = {
+    'Pendiente': 'bg-amber-100 text-amber-800',
+    'En proceso': 'bg-blue-100 text-blue-800',
+    'Completado': 'bg-emerald-100 text-emerald-800',
+  };
+  return `<span class="px-2.5 py-1 text-xs font-semibold rounded-full ${colores[estado] || 'bg-slate-100 text-slate-700'}">${esc(estado)}</span>`;
+}
+
+const fmtFecha = f => f ? new Date(f).toLocaleString('es-CO') : 'N/A';
+const urlMapa = o => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.direccion || o.cliente || '')}`;
+
+async function verificarServidor() {
+  const el = document.getElementById('estado-servidor');
+  try {
+    const res = await fetch(`${API_URL}/health`);
+    if (!res.ok) throw new Error();
+    el.innerHTML = '<i class="fa-solid fa-circle text-emerald-400 text-xs mr-1"></i> Servidor Conectado';
+  } catch {
+    el.innerHTML = '<i class="fa-solid fa-circle text-red-400 text-xs mr-1"></i> Servidor Desconectado';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Navegación
+// ---------------------------------------------------------------------------
+function cambiarSeccion(seccion) {
+  ['clientes', 'ordenes', 'insumos', 'tecnicos', 'mis-rutas'].forEach(s => {
+    document.getElementById(`seccion-${s}`).classList.add('hidden');
+  });
+  document.getElementById(`seccion-${seccion}`).classList.remove('hidden');
+
+  if (seccion === 'clientes') cargarClientes();
+  if (seccion === 'ordenes') { cargarSelects(); cargarOrdenes(); }
+  if (seccion === 'insumos') cargarInsumos();
+  if (seccion === 'tecnicos') cargarTecnicos();
+  if (seccion === 'mis-rutas') cargarSelectorTecnico();
+}
+
+function alternarModoTecnico() {
+  modoTecnicoActivo = !modoTecnicoActivo;
+  const badge = document.getElementById('rol-badge');
+  document.getElementById('txt-modo').textContent = modoTecnicoActivo ? 'Volver a Panel Admin' : 'Cambiar a Modo Técnico';
+  document.getElementById('menu-admin').classList.toggle('hidden', modoTecnicoActivo);
+  document.getElementById('menu-tecnico').classList.toggle('hidden', !modoTecnicoActivo);
+  if (modoTecnicoActivo) {
+    badge.textContent = 'Modo Técnico';
+    badge.className = 'text-xs bg-blue-700 px-2 py-0.5 rounded text-blue-200';
+    cambiarSeccion('mis-rutas');
+  } else {
+    badge.textContent = 'Panel Admin';
+    badge.className = 'text-xs bg-emerald-700 px-2 py-0.5 rounded text-emerald-200';
+    cambiarSeccion('clientes');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clientes
+// ---------------------------------------------------------------------------
+async function cargarClientes() {
+  const data = await api('/clientes');
+  document.getElementById('tabla-clientes').innerHTML = data.map(c => `
+    <tr class="hover:bg-slate-50"><td class="p-4">#${c.id}</td><td class="p-4 font-medium">${esc(c.nombre)}</td><td class="p-4">${esc(c.telefono || 'N/A')}</td><td class="p-4">${esc(c.direccion || 'N/A')}</td><td class="p-4">${esc(c.email || 'N/A')}</td></tr>
+  `).join('');
+}
+
+async function guardarCliente(e) {
+  e.preventDefault();
+  await api('/clientes', { method: 'POST', body: {
+    nombre: document.getElementById('cli-nombre').value,
+    telefono: document.getElementById('cli-telefono').value,
+    direccion: document.getElementById('cli-direccion').value,
+    email: document.getElementById('cli-email').value,
+  }});
+  document.getElementById('form-cliente').reset();
+  cargarClientes();
+}
+
+// ---------------------------------------------------------------------------
+// Insumos
+// ---------------------------------------------------------------------------
+async function cargarInsumos() {
+  const data = await api('/insumos');
+  document.getElementById('tabla-insumos').innerHTML = data.map(i => `
+    <tr class="hover:bg-slate-50"><td class="p-4">#${i.id}</td><td class="p-4 font-medium">${esc(i.nombre)}</td><td class="p-4">${esc(i.registro_invima || 'N/A')}</td><td class="p-4 font-bold ${i.stock_actual <= 5 ? 'text-red-600' : 'text-emerald-600'}">${esc(i.stock_actual)}</td><td class="p-4">${esc(i.unidad_medida)}</td></tr>
+  `).join('');
+}
+
+async function guardarInsumo(e) {
+  e.preventDefault();
+  await api('/insumos', { method: 'POST', body: {
+    nombre: document.getElementById('ins-nombre').value,
+    registro_invima: document.getElementById('ins-invima').value,
+    stock_actual: document.getElementById('ins-stock').value,
+    unidad_medida: document.getElementById('ins-unidad').value,
+  }});
+  document.getElementById('form-insumo').reset();
+  cargarInsumos();
+}
+
+// ---------------------------------------------------------------------------
+// Técnicos
+// ---------------------------------------------------------------------------
+async function cargarTecnicos() {
+  const data = await api('/tecnicos');
+  document.getElementById('tabla-tecnicos').innerHTML = data.map(t => `
+    <tr class="hover:bg-slate-50"><td class="p-4">#${t.id}</td><td class="p-4 font-medium">${esc(t.nombre)}</td><td class="p-4">${esc(t.email)}</td><td class="p-4">${esc(t.vehiculo || 'N/A')}</td><td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">Técnico Operativo</span></td></tr>
+  `).join('');
+}
+
+async function guardarTecnico(e) {
+  e.preventDefault();
+  // La contraseña ya no va escrita en el código: el servidor genera una temporal.
+  const r = await api('/tecnicos', { method: 'POST', body: {
+    nombre: document.getElementById('tec-nombre').value,
+    email: document.getElementById('tec-email').value,
+    vehiculo: document.getElementById('tec-vehiculo').value,
+  }});
+  document.getElementById('form-tecnico').reset();
+  if (r.passwordTemporal) alert(`Técnico creado.\nContraseña temporal (anótala, no se vuelve a mostrar):\n\n${r.passwordTemporal}`);
+  cargarTecnicos();
+}
+
+// ---------------------------------------------------------------------------
+// Órdenes
+// ---------------------------------------------------------------------------
+async function cargarSelects() {
+  const [clientes, tecnicos, insumos] = await Promise.all([api('/clientes'), api('/tecnicos'), api('/insumos')]);
+  document.getElementById('ord-cliente').innerHTML = '<option value="">Seleccione Cliente...</option>' + clientes.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  document.getElementById('ord-tecnico').innerHTML = '<option value="">Seleccione Técnico...</option>' + tecnicos.map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+  document.getElementById('ord-insumo').innerHTML = '<option value="">Insumo (opcional)...</option>' + insumos.map(i => `<option value="${i.id}">${esc(i.nombre)}</option>`).join('');
+}
+
+async function cargarOrdenes() {
+  const data = await api('/ordenes');
+  document.getElementById('tabla-ordenes').innerHTML = data.map(o => `
+    <tr class="hover:bg-slate-50">
+      <td class="p-4 font-medium">#${o.id}</td>
+      <td class="p-4">${esc(o.cliente || 'Sin cliente')}</td>
+      <td class="p-4">${esc(o.tecnico || 'Sin asignar')}</td>
+      <td class="p-4">${fmtFecha(o.fecha_programada)}</td>
+      <td class="p-4">${badgeEstado(o.estado)}</td>
+      <td class="p-4"><a href="${urlMapa(o)}" target="_blank" rel="noopener" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs inline-flex items-center shadow"><i class="fa-solid fa-map-pin mr-1.5"></i> Abrir Ruta</a></td>
+    </tr>
+  `).join('');
+}
+
+async function guardarOrden(e) {
+  e.preventDefault();
+  await api('/ordenes', { method: 'POST', body: {
+    cliente_id: document.getElementById('ord-cliente').value,
+    usuario_id: document.getElementById('ord-tecnico').value,
+    insumo_id: document.getElementById('ord-insumo').value || null,
+    fecha_programada: document.getElementById('ord-fecha').value,
+    observaciones: document.getElementById('ord-obs').value,
+  }});
+  document.getElementById('form-orden').reset();
+  cargarOrdenes();
+}
+
+// ---------------------------------------------------------------------------
+// Modo técnico
+// ---------------------------------------------------------------------------
+async function cargarSelectorTecnico() {
+  const sel = document.getElementById('sel-yo-tecnico');
+  const actual = sel.value;
+  const tecnicos = await api('/tecnicos');
+  sel.innerHTML = '<option value="">¿Quién eres?...</option>' + tecnicos.map(t => `<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+  sel.value = actual;
+  cargarMisRutas();
+}
+
+async function cargarMisRutas() {
+  const id = document.getElementById('sel-yo-tecnico').value;
+  const tbody = document.getElementById('tabla-mis-rutas');
+  if (!id) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">Selecciona tu nombre para ver tus órdenes.</td></tr>';
+    return;
+  }
+  const data = await api(`/ordenes/tecnico/${id}`);
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">No tienes órdenes asignadas.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(o => `
+    <tr class="hover:bg-slate-50">
+      <td class="p-4 font-medium">#${o.id}</td>
+      <td class="p-4">${esc(o.cliente)}</td>
+      <td class="p-4 text-slate-600"><i class="fa-solid fa-location-dot text-red-500 mr-1"></i> ${esc(o.direccion || 'Sin dirección')}${o.observaciones ? `<br><span class="text-xs text-slate-500">${esc(o.observaciones)}</span>` : ''}</td>
+      <td class="p-4">${fmtFecha(o.fecha_programada)}</td>
+      <td class="p-4">${badgeEstado(o.estado)}</td>
+      <td class="p-4 space-x-2 whitespace-nowrap">
+        <a href="${urlMapa(o)}" target="_blank" rel="noopener" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded text-xs inline-flex items-center shadow font-semibold"><i class="fa-solid fa-diamond-turn-right mr-1.5"></i> Navegar</a>
+        ${o.estado !== 'Completado' ? `<button onclick="completarOrden(${o.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs shadow font-semibold"><i class="fa-solid fa-check mr-1"></i> Completar</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function completarOrden(id) {
+  const observaciones = prompt('Observaciones del servicio realizado:');
+  if (observaciones === null) return; // canceló
+  await api(`/ordenes/${id}/completar`, { method: 'PUT', body: { observaciones } });
+  cargarMisRutas();
+}
+
+window.onload = () => { verificarServidor(); cargarClientes(); };
+</script>
+</body>
+</html>
