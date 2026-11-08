@@ -15,7 +15,9 @@ const db = mysql.createConnection({
         rejectUnauthorized: false
     }
 });
-
+app.get('/', (req, res) => {
+    res.json({ estado: '¡El backend de Fumican está conectado a Aiven y funcionando con éxito!' });
+});
 db.connect(err => {
     if (err) {
         console.error('Error al conectar a la base de datos:', err);
