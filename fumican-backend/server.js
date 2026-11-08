@@ -5,13 +5,15 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Configuración de la conexión a MySQL
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Fumican2026', // Reemplaza con tu contraseña si es distinta
-    database: 'db_fumican'
+    host: 'mysql-2a12cc2b-fumican.f.aivencloud.com',
+    port: 22272,
+    user: 'avnadmin',
+    password: 'AVNS_1pUjefgxbKurjtz-3_-',
+    database: 'defaultdb',
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 db.connect(err => {
